@@ -1,0 +1,26 @@
+{
+  "name": "Struk Analyzer",
+  "short_name": "StrukApp",
+  "description": "Analisis pengeluaran otomatis dari foto struk belanja",
+  "author": "Ibra",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f6fa",
+  "theme_color": "#2f3640",
+  "icons": [
+    {
+      "src": "/src/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/src/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

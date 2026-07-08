@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Struk Analyzer</title>
+
+  <!-- PWA: manifest & icon -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="src/icon-192.png">
+  <link rel="apple-touch-icon" href="src/icon-192.png">
+  <meta name="theme-color" content="#2f3640">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>💰 Struk Analyzer</h1>
+  </header>
+
+  <main>
+    <section class="capture-section">
+      <label for="camera-input" class="capture-btn">
+        📷 Foto Struk
+      </label>
+      <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+      <p id="status-text">Belum ada struk yang difoto</p>
+    </section>
+
+    <section class="summary-section">
+      <div class="summary-card">
+        <span>Total Bulan Ini</span>
+        <h2 id="total-amount">Rp 0</h2>
+      </div>
+    </section>
+
+    <section class="chart-section">
+      <canvas id="category-chart"></canvas>
+    </section>
+
+    <section class="filter-section">
+      <select id="filter-kategori">
+        <option value="semua">Semua kategori</option>
+        <option value="Makanan">Makanan</option>
+        <option value="Transport">Transport</option>
+        <option value="Belanja">Belanja</option>
+        <option value="Hiburan">Hiburan</option>
+        <option value="Tagihan">Tagihan</option>
+        <option value="Lainnya">Lainnya</option>
+      </select>
+
+      <select id="filter-bulan">
+        <option value="semua">Semua bulan</option>
+      </select>
+
+      <button id="export-btn" class="export-btn">⬇ Export CSV</button>
+    </section>
+
+    <section class="list-section">
+      <h3>Daftar Transaksi</h3>
+      <ul id="transaction-list">
+        <li class="placeholder-text">Belum ada transaksi</li>
+      </ul>
+    </section>
+  </main>
+
+<footer class="app-footer">
+    Made with 💜 by Ibra
+</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
