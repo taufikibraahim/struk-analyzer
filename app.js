@@ -9,6 +9,7 @@ const MODEL = "google/gemini-2.5-flash";
 // biarkan saja dan hapus baris header "x-app-secret" di fetch.
 const APP_SECRET = "OPENROUTER_API_KEY"; // harus sama dengan env var APP_SECRET di Vercel
 
+
 const cameraInput = document.getElementById("camera-input");
 const statusText = document.getElementById("status-text");
 const filterKategoriEl = document.getElementById("filter-kategori");
@@ -32,7 +33,7 @@ cameraInput.addEventListener("change", async (event) => {
   statusText.textContent = "Membaca struk, tunggu sebentar...";
 
   try {
-    const base64Image = await fileToBase64(file);
+    const base64Image = await compressImage(file);
     const dataStruk = await ekstrakDataStruk(base64Image);
 
     simpanTransaksi(dataStruk);
@@ -50,6 +51,43 @@ function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Foto dari kamera HP biasanya resolusinya tinggi (beberapa MB), jauh lebih
+// besar dari foto test biasa. Ini bisa bikin request gagal karena kelewat
+// batas ukuran. Fungsi ini resize + compress foto dulu sebelum dikirim.
+function compressImage(file, maxWidth = 1280, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      img.onload = () => {
+        let { width, height } = img;
+
+        // Kalau lebar foto lebih besar dari maxWidth, skalakan turun
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Hasil akhir: base64 JPEG dengan kualitas 75% (cukup buat AI baca teks)
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
