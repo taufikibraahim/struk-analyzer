@@ -8,6 +8,9 @@ const MODEL = "google/gemini-2.5-flash";
 // isi string yang sama persis di sini. Kalau belum pakai proteksi ini,
 // biarkan saja dan hapus baris header "x-app-secret" di fetch.
 const APP_SECRET = "OPENROUTER_API_KEY"; // harus sama dengan env var APP_SECRET di Vercel
+// VERSI FINAL: API key sudah aman di backend (/api/analyze),
+// bukan lagi di frontend. Fitur: foto struk, ekstrak AI, simpan,
+// dashboard, filter, edit/hapus, export CSV.
 
 
 const cameraInput = document.getElementById("camera-input");
@@ -15,6 +18,9 @@ const statusText = document.getElementById("status-text");
 const filterKategoriEl = document.getElementById("filter-kategori");
 const filterBulanEl = document.getElementById("filter-bulan");
 const exportBtn = document.getElementById("export-btn");
+const searchInput = document.getElementById("search-input");
+const themeToggleBtn = document.getElementById("theme-toggle");
+const aturBudgetBtn = document.getElementById("atur-budget-btn");
 
 let chartInstance = null;
 
@@ -195,12 +201,14 @@ function ambilTransaksiTerfilter() {
   const semua = ambilSemuaTransaksi();
   const kategoriTerpilih = filterKategoriEl.value;
   const bulanTerpilih = filterBulanEl.value;
+  const kataKunci = searchInput.value.trim().toLowerCase();
 
   return semua.filter(t => {
     const cocokKategori = kategoriTerpilih === "semua" || t.kategori === kategoriTerpilih;
     const bulanTransaksi = t.tanggal ? t.tanggal.slice(0, 7) : "";
     const cocokBulan = bulanTerpilih === "semua" || bulanTransaksi === bulanTerpilih;
-    return cocokKategori && cocokBulan;
+    const cocokPencarian = kataKunci === "" || t.toko.toLowerCase().includes(kataKunci);
+    return cocokKategori && cocokBulan && cocokPencarian;
   });
 }
 
@@ -279,6 +287,8 @@ function renderTotal(transaksi) {
 
   document.getElementById("total-amount").textContent =
     `Rp ${totalBulanIni.toLocaleString("id-ID")}`;
+
+  renderBudget(totalBulanIni);
 }
 
 function renderChart(transaksi) {
@@ -293,18 +303,27 @@ function renderChart(transaksi) {
     chartInstance.destroy();
   }
 
+  // Ambil warna teks sesuai tema yang lagi aktif (light/dark)
+  const warnaTeks = getComputedStyle(document.documentElement)
+    .getPropertyValue("--ink").trim();
+
   chartInstance = new Chart(ctx, {
     type: "doughnut",
     data: {
       labels: Object.keys(perKategori),
       datasets: [{
         data: Object.values(perKategori),
-        backgroundColor: ["#6c5ce7", "#00cec9", "#fdcb6e", "#e17055", "#0984e3", "#636e72"],
+        backgroundColor: ["#C1432B", "#1E7A5B", "#D9A441", "#445E93", "#7A4869", "#8B8272"],
+        borderColor: "#FFFFFB",
+        borderWidth: 2,
       }],
     },
     options: {
       plugins: {
-        legend: { position: "bottom" },
+        legend: {
+          position: "bottom",
+          labels: { font: { family: "Inter", size: 12 }, color: warnaTeks },
+        },
       },
     },
   });
@@ -322,12 +341,12 @@ function renderList(transaksi) {
   transaksi.slice().reverse().forEach(t => {
     const li = document.createElement("li");
     li.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="transaction-row">
         <div>
-          <strong>${t.toko}</strong><br>
-          <small style="color:#a4b0be;">${t.kategori} • ${t.tanggal}</small>
+          <strong class="toko">${t.toko}</strong>
+          <small>${t.kategori} • ${t.tanggal}</small>
         </div>
-        <strong>Rp ${t.total.toLocaleString("id-ID")}</strong>
+        <span class="jumlah">Rp ${t.total.toLocaleString("id-ID")}</span>
       </div>
       <div class="item-actions">
         <button class="btn-edit">Edit</button>
@@ -362,6 +381,81 @@ function tampilkanPreview(file) {
 
   reader.readAsDataURL(file);
 }
+
+// ---------- DARK MODE ----------
+
+function inisialisasiTema() {
+  const temaTersimpan = localStorage.getItem("tema") || "light";
+  terapkanTema(temaTersimpan);
+}
+
+function terapkanTema(tema) {
+  document.documentElement.setAttribute("data-theme", tema);
+  themeToggleBtn.textContent = tema === "dark" ? "☀️" : "🌙";
+  localStorage.setItem("tema", tema);
+}
+
+themeToggleBtn.addEventListener("click", () => {
+  const temaSaatIni = document.documentElement.getAttribute("data-theme") || "light";
+  terapkanTema(temaSaatIni === "dark" ? "light" : "dark");
+  renderChart(ambilTransaksiTerfilter());
+});
+
+// ---------- BUDGET ----------
+
+function ambilBudget() {
+  const budget = localStorage.getItem("budgetBulanan");
+  return budget ? parseInt(budget, 10) : null;
+}
+
+aturBudgetBtn.addEventListener("click", () => {
+  const budgetSaatIni = ambilBudget();
+  const budgetBaru = prompt(
+    "Masukkan budget bulanan (Rp):",
+    budgetSaatIni || ""
+  );
+
+  if (budgetBaru === null) return; // cancel
+
+  const angka = parseInt(budgetBaru.replace(/\D/g, ""), 10);
+
+  if (!angka || angka <= 0) {
+    localStorage.removeItem("budgetBulanan");
+  } else {
+    localStorage.setItem("budgetBulanan", angka);
+  }
+
+  renderDashboard();
+});
+
+function renderBudget(totalBulanIni) {
+  const budget = ambilBudget();
+  const budgetText = document.getElementById("budget-text");
+  const progressFill = document.getElementById("budget-progress");
+
+  if (!budget) {
+    budgetText.textContent = "Budget belum diset";
+    progressFill.style.width = "0%";
+    progressFill.classList.remove("over-budget");
+    return;
+  }
+
+  const persentase = Math.min((totalBulanIni / budget) * 100, 100);
+  const overBudget = totalBulanIni > budget;
+
+  budgetText.textContent =
+    `Rp ${totalBulanIni.toLocaleString("id-ID")} / Rp ${budget.toLocaleString("id-ID")}`;
+
+  progressFill.style.width = `${persentase}%`;
+  progressFill.classList.toggle("over-budget", overBudget);
+}
+
+// ---------- SEARCH ----------
+
+searchInput.addEventListener("input", renderDashboard);
+
+// Inisialisasi tema saat halaman pertama kali dibuka
+inisialisasiTema();
 
 // Render dashboard saat halaman pertama kali dibuka
 renderDashboard();

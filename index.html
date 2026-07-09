@@ -5,20 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Struk Analyzer</title>
 
-  <!-- PWA: manifest & icon -->
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="src/icon-192.png">
-  <link rel="apple-touch-icon" href="src/icon-192.png">
-  <meta name="theme-color" content="#2f3640">
+  <link rel="icon" href="/src/icon-192.png">
+  <link rel="apple-touch-icon" href="/src/icon-192.png">
+  <meta name="theme-color" content="#1B2A4A">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <header>
-    <h1>💰 Struk Analyzer</h1>
+
+  <header class="app-header">
+    <button id="theme-toggle" class="theme-toggle" aria-label="Ganti tema">🌙</button>
+    <div class="eyebrow">CATATAN BELANJA PRIBADI</div>
+    <h1>Struk Analyzer</h1>
+    <div class="barcode" aria-hidden="true"></div>
   </header>
 
   <main>
@@ -31,17 +39,30 @@
     </section>
 
     <section class="summary-section">
-      <div class="summary-card">
-        <span>Total Bulan Ini</span>
+      <div class="ticket-summary">
+        <span class="ticket-label">Total Bulan Ini</span>
         <h2 id="total-amount">Rp 0</h2>
+
+        <div class="budget-row">
+          <div class="budget-info">
+            <span id="budget-text">Budget belum diset</span>
+            <button id="atur-budget-btn">Atur budget</button>
+          </div>
+          <div class="progress-track">
+            <div id="budget-progress" class="progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
       </div>
     </section>
 
     <section class="chart-section">
+      <span class="section-label">Sebaran Kategori</span>
       <canvas id="category-chart"></canvas>
     </section>
 
     <section class="filter-section">
+      <input type="text" id="search-input" class="search-input" placeholder="🔍 Cari nama toko...">
+
       <select id="filter-kategori">
         <option value="semua">Semua kategori</option>
         <option value="Makanan">Makanan</option>
@@ -60,16 +81,17 @@
     </section>
 
     <section class="list-section">
-      <h3>Daftar Transaksi</h3>
+      <span class="section-label">Daftar Transaksi</span>
       <ul id="transaction-list">
         <li class="placeholder-text">Belum ada transaksi</li>
       </ul>
     </section>
   </main>
 
-<footer class="app-footer">
+  <footer class="app-footer">
+    <div class="barcode barcode-small" aria-hidden="true"></div>
     Made with 💜 by Ibra
-</footer>
+  </footer>
 
   <script src="app.js"></script>
 </body>
