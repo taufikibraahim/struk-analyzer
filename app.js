@@ -1,6 +1,13 @@
-// LANGKAH 5: Fitur edit, hapus, filter kategori/bulan, dan export CSV
+// VERSI FINAL: API key sudah aman di backend (/api/analyze),
+// bukan lagi di frontend. Fitur: foto struk, ekstrak AI, simpan,
+// dashboard, filter, edit/hapus, export CSV.
 
 const MODEL = "google/gemini-2.5-flash";
+
+// Kalau kamu sudah setup APP_SECRET di backend (lihat catatan di bawah),
+// isi string yang sama persis di sini. Kalau belum pakai proteksi ini,
+// biarkan saja dan hapus baris header "x-app-secret" di fetch.
+const APP_SECRET = "OPENROUTER_API_KEY"; // harus sama dengan env var APP_SECRET di Vercel
 
 const cameraInput = document.getElementById("camera-input");
 const statusText = document.getElementById("status-text");
@@ -15,7 +22,7 @@ const NAMA_BULAN = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 
-// ---------- AMBIL FOTO & EKSTRAKSI AI (sama seperti langkah sebelumnya) ----------
+// ---------- AMBIL FOTO & EKSTRAKSI AI ----------
 
 cameraInput.addEventListener("change", async (event) => {
   const file = event.target.files[0];
@@ -58,11 +65,14 @@ Ekstrak informasi dari gambar struk dan balas HANYA dengan JSON (tanpa markdown,
   "kategori": "salah satu dari: Makanan, Transport, Belanja, Hiburan, Tagihan, Lainnya"
 }`;
 
+  // Request ini sekarang ke backend kita sendiri (/api/analyze), BUKAN
+  // langsung ke OpenRouter. API key OpenRouter disimpan aman di server.
   const response = await fetch("/api/analyze", {
     method: "POST",
     headers: {
-    "Content-Type": "application/json"
-},
+      "Content-Type": "application/json",
+      "x-app-secret": APP_SECRET, // opsional: hapus baris ini kalau backend belum pakai proteksi ini
+    },
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 300,
@@ -115,7 +125,7 @@ function editTransaksi(id) {
   if (!item) return;
 
   const totalBaru = prompt("Edit total (Rp):", item.total);
-  if (totalBaru === null) return; // user tekan cancel
+  if (totalBaru === null) return;
 
   const kategoriBaru = prompt(
     "Edit kategori (Makanan/Transport/Belanja/Hiburan/Tagihan/Lainnya):",
@@ -146,7 +156,7 @@ filterBulanEl.addEventListener("change", renderDashboard);
 function ambilTransaksiTerfilter() {
   const semua = ambilSemuaTransaksi();
   const kategoriTerpilih = filterKategoriEl.value;
-  const bulanTerpilih = filterBulanEl.value; // format: "2026-07" atau "semua"
+  const bulanTerpilih = filterBulanEl.value;
 
   return semua.filter(t => {
     const cocokKategori = kategoriTerpilih === "semua" || t.kategori === kategoriTerpilih;
@@ -156,11 +166,10 @@ function ambilTransaksiTerfilter() {
   });
 }
 
-// Isi dropdown bulan otomatis berdasarkan tanggal yang ada di data
 function perbaruiOpsiBulan() {
   const semua = ambilSemuaTransaksi();
   const bulanUnik = [...new Set(semua.map(t => t.tanggal?.slice(0, 7)).filter(Boolean))];
-  bulanUnik.sort().reverse(); // terbaru duluan
+  bulanUnik.sort().reverse();
 
   const valueTerpilihSaatIni = filterBulanEl.value;
   filterBulanEl.innerHTML = '<option value="semua">Semua bulan</option>';
@@ -174,7 +183,6 @@ function perbaruiOpsiBulan() {
     filterBulanEl.appendChild(option);
   });
 
-  // Pertahankan pilihan filter sebelumnya kalau masih ada di opsi baru
   if ([...filterBulanEl.options].some(o => o.value === valueTerpilihSaatIni)) {
     filterBulanEl.value = valueTerpilihSaatIni;
   }
@@ -215,7 +223,7 @@ function renderDashboard() {
   const semua = ambilSemuaTransaksi();
   const terfilter = ambilTransaksiTerfilter();
 
-  renderTotal(semua); // total bulan berjalan, tidak terpengaruh filter
+  renderTotal(semua);
   renderChart(terfilter);
   renderList(terfilter);
 }
@@ -321,11 +329,10 @@ function tampilkanPreview(file) {
 renderDashboard();
 
 // ---------- DAFTARKAN SERVICE WORKER (PWA) ----------
-// Ini yang bikin app bisa "diinstall" dan tetap kebuka walau offline (shell-nya doang)
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("service-worker.js")
+      .register("/service-worker.js")
       .then((reg) => console.log("Service worker terdaftar:", reg.scope))
       .catch((err) => console.error("Gagal daftar service worker:", err));
   });

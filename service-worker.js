@@ -2,7 +2,7 @@
 // dibuka (shell-nya) walau internet lagi jelek. Ini BUKAN cache buat
 // respons AI (karena itu emang butuh internet tiap kali).
 
-const NAMA_CACHE = "struk-analyzer-v1";
+const NAMA_CACHE = "struk-analyzer-v2"; // dinaikkan versinya biar cache lama dibersihkan
 
 const FILE_UNTUK_DICACHE = [
   "/",
@@ -14,7 +14,6 @@ const FILE_UNTUK_DICACHE = [
   "/src/icon-512.png",
 ];
 
-// Saat service worker pertama kali di-install, simpan file-file utama ke cache
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(NAMA_CACHE).then((cache) => cache.addAll(FILE_UNTUK_DICACHE))
@@ -22,7 +21,6 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Bersihkan cache versi lama kalau ada update
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((namaCacheList) =>
@@ -37,10 +35,11 @@ self.addEventListener("activate", (event) => {
 });
 
 // Strategi: coba ambil dari cache dulu, kalau gak ada baru ke network.
-// Request ke OpenRouter (API call) sengaja dilewati, biar selalu fresh dari internet.
+// Request ke /api/ (proxy AI kita sendiri) sengaja dilewati, biar selalu
+// fresh dari server dan tidak pernah tersimpan sebagai cache.
 self.addEventListener("fetch", (event) => {
-  if (event.request.url.includes("openrouter.ai")) {
-    return; // biarkan request API langsung ke network, tidak di-cache
+  if (event.request.url.includes("/api/")) {
+    return; // biarkan request ke backend langsung ke network
   }
 
   event.respondWith(
